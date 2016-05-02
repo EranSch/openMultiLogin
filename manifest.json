@@ -1,0 +1,42 @@
+{
+   "background":{
+      "page":"background.html"
+   },
+   "browser_action":{
+      "default_icon":"icon_128.png",
+      "default_title":"New Identity"
+   },
+   "content_scripts":[
+      {
+         "all_frames":true,
+         "js":[
+            "content.js"
+         ],
+         "matches":[
+            "http://*/*",
+            "https://*/*"
+         ],
+         "run_at":"document_start"
+      }
+   ],
+   "content_security_policy":"script-src 'self'  'unsafe-eval' ; object-src 'self'",
+   "description":"Log into multiple accounts on the same site simultaneously.",
+   "icons":{
+      "128":"icon_128.png"
+   }, 
+   "manifest_version":2,
+   "name":"openMultiLogin",
+   "permissions":[
+      "contextMenus",
+      "cookies",
+      "storage",
+      "tabs",
+      "http://*/*",
+      "https://*/*",
+      "webRequest",
+      "webRequestBlocking",
+      "webNavigation"
+   ],
+   "update_url":"https://clients2.google.com/service/update2/crx",
+   "version":"0.1620"
+}
