@@ -47,7 +47,6 @@ function r() {
                 document.dispatchEvent(event)
             });
             document.__defineGetter__("cookie", function() {
-                            debugger;
                 var event = new ce("8");
                 document.dispatchEvent(event);
                 var c;
