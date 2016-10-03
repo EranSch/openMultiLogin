@@ -38,25 +38,28 @@ function s() {
 }
 function r() {
     var cookieScript = `
-        var ce = CustomEvent;
-        document.__defineSetter__("cookie", function(c) {
-            var event = new ce("7", {
-                "detail": c
+        (function() {
+            var ce = CustomEvent;
+            document.__defineSetter__("cookie", function(c) {
+                var event = new ce("7", {
+                    "detail": c
+                });
+                document.dispatchEvent(event)
             });
-            document.dispatchEvent(event)
-        });
-        document.__defineGetter__("cookie", function() {
-            var event = new ce("8");
-            document.dispatchEvent(event);
-            var c;
-            try {
-                c = localStorage.getItem("@@@cookies");
-                localStorage.removeItem("@@@cookies")
-            } catch (e) {
-                c = document.getElementById("@@@cookies").innerText
-            }
-            return c
-        })`;
+            document.__defineGetter__("cookie", function() {
+                            debugger;
+                var event = new ce("8");
+                document.dispatchEvent(event);
+                var c;
+                try {
+                    c = localStorage.getItem("@@@cookies");
+                    localStorage.removeItem("@@@cookies")
+                } catch (e) {
+                    c = document.getElementById("@@@cookies").innerText
+                }
+                return c
+            })
+        })()`;
     var b = document.createElement("script");
     b.appendChild(document.createTextNode(cookieScript));
     (document.head || document.documentElement).appendChild(b);
