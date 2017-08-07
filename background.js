@@ -66,10 +66,6 @@ function y(b) {
     chrome.storage.local.set({
         install: !0
     });
-    // var a = new XMLHttpRequest;
-    // a.open("POST", "http://www.woopra.com/track/ce/", !0);
-    // a.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-    // a.send("host\x3didmask.com\x26ce_name\x3d" + b + "\x26ce_version\x3d" + chrome.runtime.getManifest().version + "\x26ce_use\x3d" + n + "\x26ce_day\x3d" + (((new Date).getTime() - q) / 864E5 << 0) + "\x26ce_uid\x3d" + r + "\x26ce_mid\x3d" + s + "\x26ce_orgVersion\x3d" + t + "\x26ce_miduid\x3d" + s + r + "\x26ce_" + document.cookie + "\x26cookie\x3d" + r)
 }
 function w() {
     return ("000000000000" + (Math.random() * Math.pow(36, 12)).toString(36)).substr(-12)
