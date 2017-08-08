@@ -1,3 +1,6 @@
+# Sheesh! This extension was recently removed from the Chrome Store. [An issue has been created to discuss what to do from here.](https://github.com/Swingline0/openMultiLogin/issues/13)
+
+
 openMultiLogin
 ---
 
