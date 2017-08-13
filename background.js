@@ -1,25 +1,25 @@
 var f = {},
     g = [],
     l = [];
-m("");
+purgeOldMultiLoginSessions("");
 chrome.browserAction.onClicked.addListener(function() {
-    n++;
+    useCount++;
     var b = {};
-    b.use = n;
+    b.use = useCount;
     chrome.storage.sync.set(b);
     chrome.tabs.create({}, function(a) {
         p(a.id, a.id + "_@@@_")
     })
 });
-var q, n, r, s, t, u;
+var q, useCount, r, s, t, u;
 chrome.runtime.onInstalled.addListener(function(b) {
     chrome.storage.sync.get("date", function(a) {
         q = a.date;
         q || (q = (new Date).getTime(), a.date = q, chrome.storage.sync.set(a))
     });
     chrome.storage.sync.get("use", function(a) {
-        n = a.use;
-        n || (n = 0, a.use = n, chrome.storage.sync.set(a))
+        useCount = a.use;
+        useCount || (useCount = 0, a.use = useCount, chrome.storage.sync.set(a))
     });
     chrome.storage.sync.get("uid", function(a) {
         r = a.uid;
@@ -71,16 +71,15 @@ function w() {
     return ("000000000000" + (Math.random() * Math.pow(36, 12)).toString(36)).substr(-12)
 };
 
-function m(b) {
-    chrome.cookies.getAll({}, function(a) {
-        for (var c in a) {
-            var e = a[c],
-                d = e.name;
-            null === b && 0 < d.indexOf("@@@") || "" === b && -1 == d.indexOf("@@@") || b && d.substring(0, b.length) != b || chrome.cookies.remove({
-                url: (e.secure ? "https://" : "http://") + e.domain + e.path,
-                name: d
+function purgeOldMultiLoginSessions(b) {
+    chrome.cookies.getAll({}, function(userCookies = []) {
+        userCookies.forEach(currentCookie => {
+            const name = currentCookie.name;
+            null === b && 0 < name.indexOf("@@@") || "" === b && -1 == name.indexOf("@@@") || b && name.substring(0, b.length) != b || chrome.cookies.remove({
+                url: (currentCookie.secure ? "https://" : "http://") + currentCookie.domain + currentCookie.path,
+                name
             }, function() {})
-        }
+        });
     })
 }
 function z() {
@@ -113,7 +112,7 @@ chrome.tabs.onRemoved.addListener(function(b) {
                     break a
                 }
             }
-            m(a)
+            purgeOldMultiLoginSessions(a)
         }
     }
     delete l[b]
