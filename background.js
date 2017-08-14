@@ -1,8 +1,11 @@
 var f = {},
     g = [],
     l = [];
-purgeOldMultiLoginSessions("");
-chrome.browserAction.onClicked.addListener(function() {
+var q, useCount, r, s, t, u;
+
+purgeOldMultiLoginSessions('');
+
+function onBrowserActionClick() {
     useCount++;
     var b = {};
     b.use = useCount;
@@ -10,66 +13,9 @@ chrome.browserAction.onClicked.addListener(function() {
     chrome.tabs.create({}, function(a) {
         p(a.id, a.id + "_@@@_")
     })
-});
-var q, useCount, r, s, t, u;
-chrome.runtime.onInstalled.addListener(function(b) {
-    chrome.storage.sync.get("date", function(a) {
-        q = a.date;
-        q || (q = (new Date).getTime(), a.date = q, chrome.storage.sync.set(a))
-    });
-    chrome.storage.sync.get("use", function(a) {
-        useCount = a.use;
-        useCount || (useCount = 0, a.use = useCount, chrome.storage.sync.set(a))
-    });
-    chrome.storage.sync.get("uid", function(a) {
-        r = a.uid;
-        r || (r = w(), a.uid = r, chrome.storage.sync.set(a))
-    });
-    chrome.storage.local.get("mid", function(a) {
-        a.mid || (a.mid = w(), chrome.storage.local.set(a));
-        s = a.mid;
-        document.cookie || (document.cookie = "cuid\x3d" + s + ";max-age\x3d15552000")
-    });
-    chrome.storage.local.get("orgVersion", function(a) {
-        a.orgVersion || (a.orgVersion = chrome.runtime.getManifest().version, chrome.storage.local.set(a));
-        t = a.orgVersion
-    });
-    chrome.storage.local.get("mid", function(a) {
-        a.mid || (a.mid = w(), chrome.storage.local.set(a));
-        s = a.mid;
-        document.cookie || (document.cookie = "cuid\x3d" + s + ";max-age\x3d15552000")
-    });
-    chrome.storage.local.get("install", function(a) {
-        u = a.install
-    });
-    chrome.storage.sync.get(function() {
-        x(b)
-    })
-});
+}
 
-function x(b) {
-    "update" === b.reason && b.previousVersion != chrome.runtime.getManifest().version && y(b.reason + "\x26ce_previousVersion\x3d" + b.previousVersion);
-    "install" !== b.reason || (0 != ((new Date).getTime() - q) / 864E5 << 0 || u) || chrome.tabs.query({
-        url: "https://chrome.google.com/webstore*"
-    }, function(a) {
-        if (a && a[0]) {
-            var b = a[0];
-            b.openerTabId ? chrome.tabs.get(b.openerTabId, function(a) {
-                y("install\x26ce_url\x3d" + b.url + "\x26ce_referrer\x3d" + a.url)
-            }) : y("install\x26ce_url\x3d" + b.url)
-        } else {
-            y("install")
-        }
-    })
-}
-function y(b) {
-    chrome.storage.local.set({
-        install: !0
-    });
-}
-function w() {
-    return ("000000000000" + (Math.random() * Math.pow(36, 12)).toString(36)).substr(-12)
-};
+chrome.browserAction.onClicked.addListener(onBrowserActionClick);
 
 function purgeOldMultiLoginSessions(b) {
     chrome.cookies.getAll({}, function(userCookies = []) {
