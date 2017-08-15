@@ -134,8 +134,8 @@ function restoreOriginalDocumentTitle() {
     document.title = document.title.replace(/\s*\[\d*\]\s*/g, "")
 }
 
-chrome.runtime.onMessage.addListener(function(a) {
-    switch (a.type) {
+chrome.runtime.onMessage.addListener(function(event) {
+    switch (event.type) {
         case EVENTS.INITIALIZE_TITLE_HANDLER:
             injectDocumentTitleScript();
             updateDocumentTitle(document.title);

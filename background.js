@@ -1,5 +1,14 @@
+const EVENTS = {
+    DOCUMENT_TITLE_SET: '9',
+    DOCUMENT_COOKIE_SET: '7',
+    DOCUMENT_COOKIE_GET: '8',
+    INITIALIZE_TITLE_HANDLER: '5',
+    RESET_SESSION: '3',
+    ESTABLISH_NEW_SESSION_ID: '4',
+};
+
 var f = {},
-    g = [],
+    sessionReferences = [],
     l = [];
 var q, useCount, r, s, t, u;
 
@@ -14,7 +23,7 @@ function onBrowserActionClick() {
     b.use = useCount;
     chrome.storage.sync.set(b);
     chrome.tabs.create({}, function(a) {
-        p(a.id, a.id + "_@@@_")
+        storeNewSessionReference(a.id, a.id + "_@@@_")
     })
 }
 
@@ -31,33 +40,36 @@ function purgeOldMultiLoginSessions(b) {
         });
     })
 }
+
 function z() {
     chrome.cookies.getAll({}, function(b) {
         for (var a in b) {
             var c = b[a].name;
             if (!(0 > c.indexOf("_@@@_"))) {
-                for (a in c = c.substr(0, c.indexOf("_@@@_")) + "_@@@_", g) {
-                    if (g[a] == c) {
+                for (a in c = c.substr(0, c.indexOf("_@@@_")) + "_@@@_", sessionReferences) {
+                    if (sessionReferences[a] == c) {
                         return
                     }
                 }
             }
         }
     })
-};
+}
+
 chrome.tabs.onReplaced.addListener(function(addedTabId, removedTabId) {
     var c = A(removedTabId);
-    p(addedTabId, c);
-    delete g[removedTabId];
-    B(addedTabId, c)
+    storeNewSessionReference(addedTabId, c);
+    delete sessionReferences[removedTabId];
+    updateActionIconBadge(addedTabId, c)
 });
+
 chrome.tabs.onRemoved.addListener(function(b) {
     a: {
         var a = A(b);
         if (a) {
-            delete g[b];
-            for (var c in g) {
-                if (g[c] == a) {
+            delete sessionReferences[b];
+            for (var c in sessionReferences) {
+                if (sessionReferences[c] == a) {
                     break a
                 }
             }
@@ -66,9 +78,11 @@ chrome.tabs.onRemoved.addListener(function(b) {
     }
     delete l[b]
 });
+
 chrome.tabs.onUpdated.addListener(function(b, a, c) {
-    "loading" == c.status && p(b, A(b))
+    "loading" == c.status && storeNewSessionReference(b, A(b))
 });
+
 chrome.tabs.onCreated.addListener(function(b) {
     if (b) {
         var a = b.id;
@@ -77,12 +91,12 @@ chrome.tabs.onCreated.addListener(function(b) {
                 var c = b.windowId;
                 if (activeWindowId && activeTabId && activeWindowId != c) {
                     c = A(activeTabId);
-                    p(a, c);
+                    storeNewSessionReference(a, c);
                     l[a] = !0;
                     return
                 }
             }
-            b.openerTabId && "chrome" != b.url.substr(0, 6) ? (c = A(b.openerTabId), p(a, c), "undefined" === typeof l[a] && (l[a] = b.openerTabId)) : l[a] = !0
+            b.openerTabId && "chrome" != b.url.substr(0, 6) ? (c = A(b.openerTabId), storeNewSessionReference(a, c), "undefined" === typeof l[a] && (l[a] = b.openerTabId)) : l[a] = !0
         }
     }
 });
@@ -123,6 +137,7 @@ chrome.webRequest.onBeforeRequest.addListener(function(b) {
     urls: ["http://*/*", "https://*/*"],
     types: ["main_frame"]
 }, ["blocking", "requestBody"]);
+
 chrome.webRequest.onBeforeSendHeaders.addListener(function(b) {
     var a = b.tabId;
     if (a && !(0 > a)) {
@@ -181,6 +196,7 @@ chrome.webRequest.onBeforeSendHeaders.addListener(function(b) {
 }, {
     urls: ["http://*/*", "https://*/*"]
 }, ["blocking", "requestHeaders"]);
+
 chrome.webRequest.onHeadersReceived.addListener(function(b) {
     var a = b.tabId;
     if (a && !(0 > a)) {
@@ -201,6 +217,7 @@ chrome.webRequest.onHeadersReceived.addListener(function(b) {
 }, {
     urls: ["http://*/*", "https://*/*"]
 }, ["blocking", "responseHeaders"]);
+
 chrome.webRequest.onBeforeRequest.addListener(function(b) {
     var a = b.tabId;
     if (a && !(0 > a) && A(a)) {
@@ -211,6 +228,7 @@ chrome.webRequest.onBeforeRequest.addListener(function(b) {
 }, {
     urls: ["https://mail.google.com/mail/ca/*"]
 }, ["blocking", "requestBody"]);
+
 chrome.webRequest.onHeadersReceived.addListener(function(b) {
     var a = b.tabId;
     if (a && !(0 > a)) {
@@ -224,6 +242,7 @@ chrome.webRequest.onHeadersReceived.addListener(function(b) {
 }, {
     urls: ["https://translate.googleapis.com/translate_static/img/loading.gif"]
 }, ["blocking", "responseHeaders"]);
+
 chrome.webNavigation.onDOMContentLoaded.addListener(function(b) {
     var a = b.tabId;
     if (!(!a || 0 > a || !A(a) || 0 < b.frameId)) {
@@ -236,54 +255,68 @@ chrome.webNavigation.onDOMContentLoaded.addListener(function(b) {
 }, {
     urls: ["http://*/*", "https://*/*"]
 });
-chrome.runtime.onConnect.addListener(function(b) {
-    b.onMessage.addListener(function(a) {
-        debugger;
-        '3' == a.type && b.sender.tab && b.postMessage({
-            type: '4',
-            profile: A(b.sender.tab.id)
-        })
+
+chrome.runtime.onConnect.addListener(function(contentScript) {
+    contentScript.onMessage.addListener(function(event) {
+        switch (event.type) {
+            case EVENTS.RESET_SESSION:
+                if (contentScript.sender.tab) {
+                    contentScript.postMessage({
+                        type: '4',
+                        profile: A(contentScript.sender.tab.id)
+                    });
+                }
+                break;
+        }
     })
 });
 
 function A(b) {
     if (!(1 > b)) {
-        return f[b] || !g[b] ? "" : g[b]
+        return f[b] || !sessionReferences[b] ? "" : sessionReferences[b]
     }
 }
-function p(b, a) {
-    a && (g[b] = a, B(b, a))
-}
-function B(b, a) {
-    if ("undefined" !== typeof a) {
-        var c = {
-            text: a.substr(0, a.indexOf("_@@@_")),
-            tabId: b
-        };
-        chrome.browserAction.setBadgeBackgroundColor({
-            color: "#006600",
-            tabId: b
-        });
-        chrome.browserAction.setBadgeText(c)
-    }
-};
 
-function F(b) {
-    var a = b.pageUrl;
-    b.linkUrl && (a = b.linkUrl);
+function storeNewSessionReference(sessionNumber, sessionIdPrefix) {
+    if (!sessionIdPrefix) {
+        return;
+    }
+    sessionReferences[sessionNumber] = sessionIdPrefix;
+    updateActionIconBadge(sessionNumber, sessionIdPrefix);
+}
+
+function updateActionIconBadge(sessionNumber, sessionIdPrefix) {
+    if (!sessionIdPrefix) {
+        return;
+    }
+    const badgeParams = {
+        text: sessionNumber.toString(),
+        tabId: sessionNumber
+    };
+    chrome.browserAction.setBadgeBackgroundColor({
+        color: "#006600",
+        tabId: sessionNumber
+    });
+    chrome.browserAction.setBadgeText(badgeParams);
+}
+
+function openInNewSession(sourceElement) {
+    var url = sourceElement.linkUrl || sourceElement.pageUrl;
     chrome.tabs.create({
-        url: a
+        url
     }, function(a) {
-        p(a.id, a.id + "_@@@_")
+        storeNewSessionReference(a.id, a.id + "_@@@_")
     })
 }
+
 chrome.contextMenus.create({
     title: "Duplicate Page in New Identity",
     contexts: ["page", "image"],
-    onclick: F
+    onclick: openInNewSession
 });
+
 chrome.contextMenus.create({
     title: "Open Link in New Identity",
     contexts: ["link"],
-    onclick: F
+    onclick: openInNewSession
 });
