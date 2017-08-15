@@ -3,6 +3,9 @@ var f = {},
     l = [];
 var q, useCount, r, s, t, u;
 
+let activeTabId;
+let activeWindowId;
+
 purgeOldMultiLoginSessions('');
 
 function onBrowserActionClick() {
@@ -42,11 +45,11 @@ function z() {
         }
     })
 };
-chrome.tabs.onReplaced.addListener(function(b, a) {
-    var c = A(a);
-    p(b, c);
-    delete g[a];
-    B(b, c)
+chrome.tabs.onReplaced.addListener(function(addedTabId, removedTabId) {
+    var c = A(removedTabId);
+    p(addedTabId, c);
+    delete g[removedTabId];
+    B(addedTabId, c)
 });
 chrome.tabs.onRemoved.addListener(function(b) {
     a: {
@@ -72,8 +75,8 @@ chrome.tabs.onCreated.addListener(function(b) {
         if (a && !(0 > a)) {
             if (!b.openerTabId) {
                 var c = b.windowId;
-                if (C && D && C != c) {
-                    c = A(D);
+                if (activeWindowId && activeTabId && activeWindowId != c) {
+                    c = A(activeTabId);
                     p(a, c);
                     l[a] = !0;
                     return
@@ -83,28 +86,34 @@ chrome.tabs.onCreated.addListener(function(b) {
         }
     }
 });
-var C;
-chrome.windows.getCurrent({}, function(b) {
-    E(b.id)
-});
-chrome.windows.onFocusChanged.addListener(function(b) {
-    E(b)
-});
 
-function E(b) {
-    b && chrome.windows.get(b, {}, function(a) {
-        a && "normal" == a.type && (C = b, chrome.tabs.query({
-            active: !0,
-            windowId: C
-        }, function(a) {
-            D = a[0].id
-        }))
-    })
+chrome.windows.getCurrent({}, windowObject =>
+    updateActiveViewIds(windowObject.id));
+
+chrome.windows.onFocusChanged.addListener(focusedWindowId =>
+    updateActiveViewIds(focusedWindowId));
+
+chrome.tabs.onActivated.addListener((tabId, windowId) =>
+    updateActiveViewIds(windowId));
+
+function updateActiveViewIds(windowId) {
+    if (!windowId) {
+        return;
+    }
+    function handleWindowQuery(windowObject) {
+        if (windowObject && "normal" == windowObject.type) {
+            activeWindowId = windowId;
+            chrome.tabs.query({
+                active: true,
+                windowId: activeWindowId
+            }, function(activeTabs) {
+                activeTabId = activeTabs[0].id
+            })
+        }
+    }
+    chrome.windows.get(windowId, {}, handleWindowQuery);
 }
-var D;
-chrome.tabs.onActiveChanged.addListener(function(b, a) {
-    E(a.windowId)
-});
+
 chrome.webRequest.onBeforeRequest.addListener(function(b) {
     if ((b = b.tabId) && !(0 > b) && (z(), "undefined" === typeof l[b])) {
         b = 0;
@@ -220,7 +229,7 @@ chrome.webNavigation.onDOMContentLoaded.addListener(function(b) {
     if (!(!a || 0 > a || !A(a) || 0 < b.frameId)) {
         try {
             chrome.tabs.sendMessage(a, {
-                type: 5
+                type: '5'
             })
         } catch (c) {}
     }
@@ -229,8 +238,9 @@ chrome.webNavigation.onDOMContentLoaded.addListener(function(b) {
 });
 chrome.runtime.onConnect.addListener(function(b) {
     b.onMessage.addListener(function(a) {
-        3 == a.type && b.sender.tab && b.postMessage({
-            type: 4,
+        debugger;
+        '3' == a.type && b.sender.tab && b.postMessage({
+            type: '4',
             profile: A(b.sender.tab.id)
         })
     })

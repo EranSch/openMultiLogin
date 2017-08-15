@@ -1,21 +1,31 @@
-var h = 6,
-    userProfile = null,
-    n;
+const EVENTS = {
+    DOCUMENT_TITLE_SET: '9',
+    DOCUMENT_COOKIE_SET: '7',
+    DOCUMENT_COOKIE_GET: '8',
+    INITIALIZE_TITLE_HANDLER: '5',
+    RESET_SESSION: '3',
+    ESTABLISH_NEW_SESSION_ID: '4',
+};
 
-(function init() {
-    let runtimeMessanger;
-    try {
-        runtimeMessanger = chrome.runtime.connect({
-            name: "3"
-        });
-        runtimeMessanger.onMessage.addListener(a => {
-            4 == a.type && ('undefined' == a.profile && window.location.reload(), setProfile(a.profile))
-        });
-        runtimeMessanger.postMessage({
-            type: "3"
-        });
-        runtimeMessanger.onDisconnect.addListener(() => {})
-    } catch (q) {}
+let sessionIdPrefix = null;
+let sessionNumber;
+
+(function connectToBackgroundPage() {
+    const runtimeMessanger = chrome.runtime.connect({
+        name: EVENTS.RESET_SESSION
+    });
+    runtimeMessanger.onMessage.addListener(a => {
+        if (a.type === EVENTS.ESTABLISH_NEW_SESSION_ID) {
+            if (typeof a.profile === 'undefined') {
+                window.location.reload();
+            }
+            setSessionId(a.profile);
+        }
+    });
+    runtimeMessanger.postMessage({
+        type: EVENTS.RESET_SESSION
+    });
+    runtimeMessanger.onDisconnect.addListener(() => {});
     if (!runtimeMessanger) {
         throw 'Failed to create runtime event handler'
     }
@@ -25,17 +35,17 @@ var h = 6,
 function injectDocumentTitleScript() {
     const titleScript = `
         (function() {
-            var ____t = document.title;
-            var ce = CustomEvent;
-            document.__defineSetter__("title", function(t) {
-                ____t = t;
-                var e = new ce("9", {
-                    "detail": t
+            let ____t = document.title;
+            const ce = CustomEvent;
+            document.__defineSetter__('title', function(newTitle) {
+                ____t = newTitle;
+                const event = new ce('${EVENTS.DOCUMENT_TITLE_SET}', {
+                    'detail': newTitle
                 });
-                document.dispatchEvent(e)
+                document.dispatchEvent(event);
             });
-            document.__defineGetter__("title", function() {
-                return ____t
+            document.__defineGetter__('title', function() {
+                return ____t;
             });
         })()`;
     const scriptElm = document.createElement('script');
@@ -43,79 +53,98 @@ function injectDocumentTitleScript() {
     (document.head || document.documentElement).appendChild(scriptElm);
     scriptElm.parentNode.removeChild(scriptElm)
 }
+
 function injectCookieScript() {
     const cookieScript = `
         (function() {
-            var ce = CustomEvent;
-            document.__defineSetter__("cookie", function(c) {
-                var event = new ce("7", {
-                    "detail": c
+            const ce = CustomEvent;
+            document.__defineSetter__('cookie', function(cookies) {
+                const event = new ce(${EVENTS.DOCUMENT_COOKIE_SET}, {
+                    detail: cookies
                 });
-                document.dispatchEvent(event)
-            });
-            document.__defineGetter__("cookie", function() {
-                var event = new ce("8");
                 document.dispatchEvent(event);
-                var c;
+            });
+            document.__defineGetter__('cookie', function() {
+                const event = new ce(${EVENTS.DOCUMENT_COOKIE_GET});
+                document.dispatchEvent(event);
+                let c;
                 try {
                     c = localStorage.getItem("@@@cookies");
-                    localStorage.removeItem("@@@cookies")
+                    localStorage.removeItem("@@@cookies");
                 } catch (e) {
-                    c = document.getElementById("@@@cookies").innerText
+                    c = document.getElementById("@@@cookies").innerText;
                 }
-                return c
-            })
+                return c;
+            });
         })()`;
     const scriptElm = document.createElement('script');
     scriptElm.appendChild(document.createTextNode(cookieScript));
     (document.head || document.documentElement).appendChild(scriptElm);
     scriptElm.parentNode.removeChild(scriptElm)
 }
-function setProfile(profile) {
-    if (null !== profile) {
-        userProfile = profile;
-        n = userProfile.substr(0, userProfile.indexOf('_@@@_'));
+
+function setSessionId(newId) {
+    if (null !== newId) {
+        sessionIdPrefix = newId;
+        sessionNumber = sessionIdPrefix.substr(0, sessionIdPrefix.indexOf('_@@@_'));
     }
 }
-document.addEventListener(7, function(a) {
-    a = a.detail;
-    document.cookie = null === userProfile ? a : userProfile + a.trim()
-});
-document.addEventListener(8, function() {
-    var currentSessionCookies;
-    var documentCookies = document.cookie.split('; ');
-    currentSessionCookies = "";
-    if (documentCookies.length) {
-        documentCookies.forEach(cookie => {
-            if (userProfile && cookie.substring(0, userProfile.length) != userProfile) {
-                return;
-            }
-            if (-1 < cookie.indexOf('_@@@_')) {
-                return;
-            }
-            currentSessionCookies && (currentSessionCookies += "; ");
-            currentSessionCookies += userProfile ? cookie.substring(userProfile.length) : cookie
-        });
-    }
-    try {
-        localStorage.setItem("@@@cookies", currentSessionCookies)
-    } catch (v) {
-        document.getElementById("@@@cookies") || (f = document.createElement("div"), f.setAttribute("id", "@@@cookies"), document.documentElement.appendChild(f), f.style.display = "none"), document.getElementById("@@@cookies").a = currentSessionCookies
-    }
-});
-document.addEventListener(9, function(a) {
-    u(a.detail)
+
+document.addEventListener(EVENTS.DOCUMENT_COOKIE_GET, function onCookieGet(event) {
+    const value = event.detail || '';
+    return document.cookie === sessionIdPrefix
+        ? value : sessionIdPrefix + value.trim();
 });
 
-function u(a) {
-    n ? a.substr(0, n.length + 2) != "[" + n + "]" && (document.title = "[" + n + "] " + a + " [" + n + "]") : document.title = a
+document.addEventListener(EVENTS.DOCUMENT_COOKIE_SET, function onCookieSet() {
+    const documentCookies = document.cookie.split('; ');
+    let currentSessionCookies = [];
+    if (documentCookies.length) {
+        documentCookies.forEach(cookie => {
+            const cookieMatchesCurrentSession =
+                sessionIdPrefix &&
+                cookie.substring(0, sessionIdPrefix.length) !== sessionIdPrefix.toString();
+            const cookieContainsOtherSession = -1 < cookie.indexOf('_@@@_');
+            if (cookieMatchesCurrentSession ||cookieContainsOtherSession ) {
+                return;
+            }
+            currentSessionCookies.push(sessionIdPrefix ? cookie.substring(sessionIdPrefix.length) : cookie);
+        });
+    }
+    const cookiesToStore = currentSessionCookies.join('; ');
+    localStorage.setItem("@@@cookies", cookiesToStore);
+});
+
+document.addEventListener(EVENTS.DOCUMENT_TITLE_SET, event =>
+    updateDocumentTitle(event.detail));
+
+function updateDocumentTitle(requestedTitle) {
+    if (!sessionNumber) {
+        return;
+    }
+    const isTitleSet = requestedTitle.substr(0, sessionNumber.length + 2) === `[${sessionNumber}]`;
+    if (isTitleSet) {
+        document.title = requestedTitle;
+        return;
+    }
+    document.title = `[${sessionNumber}] ${requestedTitle} [${sessionNumber}]`;
+}
+
+function restoreOriginalDocumentTitle() {
+    document.title = document.title.replace(/\s*\[\d*\]\s*/g, "")
 }
 
 chrome.runtime.onMessage.addListener(function(a) {
-    5 == a.type && (injectDocumentTitleScript(), u(document.title));
-    "3" == a.type && (setProfile(""), document.title = document.title.replace(/\s*\[\d*\]\s*/g, ""))
+    switch (a.type) {
+        case EVENTS.INITIALIZE_TITLE_HANDLER:
+            injectDocumentTitleScript();
+            updateDocumentTitle(document.title);
+            break;
+        case EVENTS.RESET_SESSION:
+            setSessionId('');
+            restoreOriginalDocumentTitle();
+            break;
+    }
 });
 
-window.onunload = function() {
-    document.title = document.title.replace(/\s*\[\d*\]\s*/g, "")
-};
+window.onunload = restoreOriginalDocumentTitle;
