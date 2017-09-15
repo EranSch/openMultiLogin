@@ -5,18 +5,19 @@ node_js:
 
 script:
 - echo $(pwd)
-- zip -rq build.zip src/.
+- (cd src; zip -rq ../${TRAVIS_TAG}.zip .)
+- ls
 
 deploy:
   provider: releases
   skip_cleanup: true
   api_key:
     secure: B6skzsL4YV913VLhY7fBcopYidmOI5OI7U4/plwj3+gUQrz7vHmR/CdhJSuYO9YqOj3OCrWP1eCOXBegYBB7PVWEA9yg0mw/jIDziGZdWdtidFJI8h4VHxuGOu0OS8iOefD/lXq1i+7XeNjOmo2GZZ43GqijeGdTrmmE9f8zu2/HYdG+X+cGV1GIq2wKqCpssljC15XMlsB0iOhoFScvWd2GwQccN9x/ACxOJ9wB448FpQmykRz30FmLx1qUVHD/8qx5NuoEF1kZijz61W08xpgEU5/xqMJ1MYTTGBe0MsUn3loNvMrfNpWf6ichA/S+Flr0ztgithk8zbCw9RAxYzIwGHU1RtJh8O8tPjxcog+vIyJtw/cD5rPCNc/NcDbr3f/FEfPmaqrV5X/zy72b7O9ENUlxRfsBjR1+v5HwpYmLYOaeFDBRx/jsLam4rPfDhImstG+7gDEhulge8W9a68Z0HdVk9gCQ9NBQfI6WSrS2DUCwPn5RwzKce54uItzMgofjeQ+RViGVV6TD86SImb5kkRzEYinPpgkB2SObyLj3ss9jP2HJ1K6kKz4amoj9NRmcp9LdmWcSksDv9eGIWfZKcErk46IBu2r2T8KOvAnV7n15PoY4gODOF+xoBjpEzcO20a4Fnljjt8TfcYGlOuSBKg07sORHvWQjZeWUpDg=
-  file: build.zip
+  file: ${TRAVIS_TAG}.zip
   on:
     repo: Swingline0/openMultiLogin
     tags: true
 
 branches:
   only:
-  - master
+  - /^release-.*$/
