@@ -19,4 +19,4 @@ deploy:
 
 branches:
   only:
-  - ci
+  - master
