@@ -5,7 +5,9 @@ A de-obfuscated, republishing of the super-handy MultiLogin extension with the c
 
 Chrome Webstore Link
 ---
-https://chrome.google.com/webstore/detail/openmultilogin/plaahcaagklllbcjognjgcnldgjnjhpb
+~~https://chrome.google.com/webstore/detail/openmultilogin/plaahcaagklllbcjognjgcnldgjnjhpb~~
+
+**NOTE: The Chrome Webstore has taken this extension down so the above link is essentially just a 404 for the time being. Please refer to the [related issue](https://github.com/Swingline0/openMultiLogin/issues/18) for more updates.**
 
 Acknowledgments
 ----
